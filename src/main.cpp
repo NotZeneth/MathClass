@@ -3,11 +3,23 @@
 
 struct Particle {
     glm::vec2 position;
+    glm::vec2 velocity;
 
     Particle()
-        : position{utils::rand(-gl::window_aspect_ratio(), gl::window_aspect_ratio()),
-                   utils::rand(-1.f, 1.f)} {}
+    {
+        position = {
+            utils::rand(-gl::window_aspect_ratio(), gl::window_aspect_ratio()),
+            utils::rand(-1.f, 1.f)
+        };
+
+        // random speed nd stats
+        float angle = utils::rand(0.f, 2.f * 3.14159f); //environ pi
+        float speed = utils::rand(0.2f, 0.6f);
+
+        velocity = glm::vec2(std::cos(angle), std::sin(angle)) * speed;
+    }
 };
+
 
 int main()
 {
@@ -27,6 +39,14 @@ int main()
     {
         glClearColor(0.f, 0.f, 0.f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT);
+
+
+        float dt = gl::delta_time_in_seconds();
+
+        // Update de la pos
+        for (auto& p : particles) {
+            p.position += p.velocity * dt;
+        }
 
         // Render des particules
         for (const auto& p : particles) {
