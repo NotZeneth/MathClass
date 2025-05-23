@@ -30,13 +30,6 @@ struct Particle {
 
         color_start = glm::vec4(utils::rand(0.2f, 1.f), utils::rand(0.2f, 1.f), utils::rand(0.2f, 1.f), 1.f);
         color_end   = glm::vec4(utils::rand(0.2f, 1.f), utils::rand(0.2f, 1.f), utils::rand(0.2f, 1.f), 1.f);
-
-
-
-
-
-
-        
     }
 };
 
@@ -93,8 +86,10 @@ int main()
 
             float shrink_factor = glm::clamp(time_left / shrink_duration, 0.f, 1.f); // Le clamp permet de faire que sur la fin
 
-            // Ici UNE SEULE déclaration de radius
-            float radius = 0.02f * shrink_factor;
+            float pulse = glm::sin(p.age * 20.f) * 0.5f + 0.5f;
+            pulse = glm::mix(1.f, pulse, 1.f - shrink_factor);
+
+            float radius = 0.02f * shrink_factor * pulse;
 
             float t = glm::clamp(p.age / p.lifetime, 0.f, 1.f);
             glm::vec4 color = glm::mix(p.color_start, p.color_end, t);
