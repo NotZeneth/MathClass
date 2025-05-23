@@ -42,14 +42,23 @@ int main()
         glClearColor(0.f, 0.f, 0.f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-
         float dt = gl::delta_time_in_seconds();
 
         // Update de la pos
         for (auto& p : particles) {
+            
+            glm::vec2 total_force{};
 
+            //Gravity
             glm::vec2 gravity = glm::vec2(0.f, -1.00f * p.mass); 
-            glm::vec2 acceleration = gravity / p.mass;
+            //total_force += gravity;
+
+            float k = 1.0f; // Resistance
+            glm::vec2 air_resistance = -k * p.velocity;
+            total_force += air_resistance;
+
+            //Acceleration
+            glm::vec2 acceleration = total_force / p.mass;
             p.velocity += acceleration * dt;
 
             p.position += p.velocity * dt; // Update finale de la pos
