@@ -77,10 +77,21 @@ int main()
             
         }
 
-        // Render des particules
+        // Render des particules selon l'age
         for (const auto& p : particles) {
-            utils::draw_disk(p.position, 0.02f, glm::vec4(1.f, 1.f, 1.f, 1.f));
+
+            float shrink_duration = 2.f;
+            float time_left = p.lifetime - p.age;
+
+            float shrink_factor = glm::clamp(time_left / shrink_duration, 0.f, 1.f); //Le clamp permet de faire que sur la fin
+
+            float radius = 0.02f * shrink_factor;
+            float alpha  = shrink_factor;
+
+            utils::draw_disk(p.position, radius, glm::vec4(1.f, 1.f, 1.f, alpha));
         }
+
+
 
         //On check l'age de la particule
         particles.erase(
