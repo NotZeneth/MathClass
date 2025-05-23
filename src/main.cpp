@@ -5,6 +5,9 @@ struct Particle {
     glm::vec2 position;
     glm::vec2 velocity;
     float mass;
+    float age = 0.f;
+    float lifetime = 0.f;
+
 
     Particle()
     {
@@ -19,6 +22,12 @@ struct Particle {
         mass = utils::rand(0.5f, 2.f); // rand between 0.5 et 2
 
         velocity = glm::vec2(std::cos(angle), std::sin(angle)) * speed;
+
+        age = 0.f;
+        lifetime = utils::rand(2.f, 5.f); // durée de vie entre 2 et 5 secondes
+
+
+        
     }
 };
 
@@ -62,6 +71,9 @@ int main()
             p.velocity += acceleration * dt;
 
             p.position += p.velocity * dt; // Update finale de la pos
+
+            //Age
+            p.age += dt;
             
         }
 
@@ -69,6 +81,15 @@ int main()
         for (const auto& p : particles) {
             utils::draw_disk(p.position, 0.02f, glm::vec4(1.f, 1.f, 1.f, 1.f));
         }
+
+        //On check l'age de la particule
+        particles.erase(
+            std::remove_if(particles.begin(), particles.end(),
+                        [](const Particle& p) {
+                            return p.age > p.lifetime;
+                        }),
+            particles.end()
+        );
 
     }
 }
