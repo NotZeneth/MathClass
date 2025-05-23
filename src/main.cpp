@@ -7,6 +7,8 @@ struct Particle {
     float mass;
     float age = 0.f;
     float lifetime = 0.f;
+    glm::vec4 color_start;
+    glm::vec4 color_end;
 
 
     Particle()
@@ -24,7 +26,14 @@ struct Particle {
         velocity = glm::vec2(std::cos(angle), std::sin(angle)) * speed;
 
         age = 0.f;
-        lifetime = utils::rand(2.f, 5.f); // durée de vie entre 2 et 5 secondes
+        lifetime = utils::rand(2.f, 5.f); 
+
+        color_start = glm::vec4(utils::rand(0.2f, 1.f), utils::rand(0.2f, 1.f), utils::rand(0.2f, 1.f), 1.f);
+        color_end   = glm::vec4(utils::rand(0.2f, 1.f), utils::rand(0.2f, 1.f), utils::rand(0.2f, 1.f), 1.f);
+
+
+
+
 
 
         
@@ -79,17 +88,23 @@ int main()
 
         // Render des particules selon l'age
         for (const auto& p : particles) {
-
             float shrink_duration = 2.f;
             float time_left = p.lifetime - p.age;
 
-            float shrink_factor = glm::clamp(time_left / shrink_duration, 0.f, 1.f); //Le clamp permet de faire que sur la fin
+            float shrink_factor = glm::clamp(time_left / shrink_duration, 0.f, 1.f); // Le clamp permet de faire que sur la fin
 
+            // Ici UNE SEULE déclaration de radius
             float radius = 0.02f * shrink_factor;
-            float alpha  = shrink_factor;
 
-            utils::draw_disk(p.position, radius, glm::vec4(1.f, 1.f, 1.f, alpha));
+            float t = glm::clamp(p.age / p.lifetime, 0.f, 1.f);
+            glm::vec4 color = glm::mix(p.color_start, p.color_end, t);
+
+            color.a *= shrink_factor;
+
+            utils::draw_disk(p.position, radius, color);
         }
+
+
 
 
 
