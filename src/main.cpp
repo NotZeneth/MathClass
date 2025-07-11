@@ -97,12 +97,15 @@ struct Particle {
         glm::vec2 center = {0.0f, 0.0f};
         float radius_max = 0.3f;
 
-        // Choix non-uniforme du rayon et de l'angle
-        float RepartitionAngle = utils::rand(0.f, 2.f * 3.14159f);
-        float radius = utils::rand(0.f, radius_max);
+        glm::vec2 p_local;
+        do {
+            p_local = glm::vec2(
+                utils::rand(-radius_max, radius_max),
+                utils::rand(-radius_max, radius_max)
+            );
+        } while (glm::dot(p_local, p_local) > radius_max * radius_max); // loop jusqua ce que ce soit bien dans le cercle
 
-        // Coordonnées polaires → cartésiennes
-        position = center + radius * glm::vec2(std::cos(RepartitionAngle), std::sin(RepartitionAngle));
+        position = center + p_local;
 
         float angle = utils::rand(0.f, 2.f * 3.14159f);
         float speed = 0; //utils::rand(0.2f, 0.6f);
