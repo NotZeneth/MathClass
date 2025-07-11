@@ -94,14 +94,15 @@ struct Particle {
 
     Particle()
     {
-        glm::vec2 origin = {0.2f, -0.2f};
-        glm::vec2 u = {0.5f, 0.0f};       
-        glm::vec2 v = {0.8f, 0.8f};        
+        glm::vec2 center = {0.0f, 0.0f};
+        float radius_max = 0.3f;
 
-        float alpha = utils::rand(0.f, 1.f);
-        float beta  = utils::rand(0.f, 1.f);
+        // Choix non-uniforme du rayon et de l'angle
+        float RepartitionAngle = utils::rand(0.f, 2.f * 3.14159f);
+        float radius = utils::rand(0.f, radius_max);
 
-        position = origin + alpha * u + beta * v;
+        // Coordonnées polaires → cartésiennes
+        position = center + radius * glm::vec2(std::cos(RepartitionAngle), std::sin(RepartitionAngle));
 
         float angle = utils::rand(0.f, 2.f * 3.14159f);
         float speed = 0; //utils::rand(0.2f, 0.6f);
@@ -124,24 +125,10 @@ int main()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
     std::vector<Particle> particles;
-    for (int i = 0; i < 100; ++i) {
+    for (int i = 0; i < 300; ++i) {
         particles.emplace_back();
     }
 
-    std::vector<Segment> walls = {
-        Segment(glm::vec2(-1.f, -0.8f), glm::vec2(1.f, -0.5f)),
-        Segment(glm::vec2(-0.5f, -1.f), glm::vec2(-0.2f, 1.f)),
-        Segment(glm::vec2(-1.f, 0.8f), glm::vec2(1.f, 0.9f)),
-        Segment(glm::vec2(-gl::window_aspect_ratio(), -1.f), glm::vec2(gl::window_aspect_ratio(), -1.f)),
-        Segment(glm::vec2(-gl::window_aspect_ratio(),  1.f), glm::vec2(gl::window_aspect_ratio(),  1.f)),
-        Segment(glm::vec2(-gl::window_aspect_ratio(), -1.f), glm::vec2(-gl::window_aspect_ratio(), 1.f)),
-        Segment(glm::vec2(gl::window_aspect_ratio(), -1.f), glm::vec2(gl::window_aspect_ratio(), 1.f)),
-    };
-
-    std::vector<Circle> circles = {
-        Circle(glm::vec2(0.f, 0.f), 0.3f),
-        Circle(glm::vec2(0.5f, -0.3f), 0.2f)
-    };
 
     while (gl::window_is_open())
     {
@@ -169,42 +156,6 @@ int main()
 
             bool collided = false;
 
-            for (const auto& wall : walls) {
-                glm::vec2 intersection;
-                float t;
-                if (intersect_segments(old_position, new_position, wall.a, wall.b, intersection, t)) {
-                    glm::vec2 wall_dir = glm::normalize(wall.b - wall.a);
-                    glm::vec2 normal = glm::vec2(-wall_dir.y, wall_dir.x);
-
-                    p.velocity = glm::reflect(p.velocity, normal);
-
-                    float distance_left = glm::length(new_position - intersection);
-                    p.position = intersection + p.velocity * (distance_left / glm::length(p.velocity));
-
-                    collided = true;
-                    break;
-                }
-            }
-
-            for (const auto& circle : circles) {
-                glm::vec2 intersection;
-                float t;
-
-                if (intersect_segment_circle(old_position, new_position, circle.center, circle.radius, intersection, t)) {
-                    glm::vec2 normal = glm::normalize(intersection - circle.center);
-                    p.velocity = glm::reflect(p.velocity, normal);
-
-                    float distance_left = glm::length(new_position - intersection);
-                    p.position = intersection + p.velocity * (distance_left / glm::length(p.velocity));
-
-                    collided = true;
-                    break;
-                }
-            }
-
-            if (!collided)
-                p.position = new_position;
-
             p.age += dt;
         }
 
@@ -219,21 +170,13 @@ int main()
 
             float radius = 0.02f * shrink_factor * pulse;
             */
-            float radius = 0.02f; // taille fixe sans shrink
+            float radius = 0.01f; // taille fixe sans shrink
 
             float t = glm::clamp(p.age / p.lifetime, 0.f, 1.f);
             glm::vec4 color = glm::mix(p.color_start, p.color_end, t);
             // color.a *= shrink_factor; // transparence désactivée
 
             utils::draw_disk(p.position, radius, color);
-        }
-
-        for (const auto& wall : walls) {
-            utils::draw_line(wall.a, wall.b, 0.01f, {1.f, 1.f, 1.f, 1.f});
-        }
-
-        for (const auto& circle : circles) {
-            utils::draw_disk(circle.center, circle.radius, {1.f, 0.f, 0.f, 1.f});
         }
 
         /*
