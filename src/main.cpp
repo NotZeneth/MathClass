@@ -1,5 +1,6 @@
 #include "opengl-framework/opengl-framework.hpp"
 #include "utils.hpp"
+#include <iostream>
 
 #include <algorithm>
 
@@ -81,45 +82,81 @@ bool intersect_segment_circle(glm::vec2 p0, glm::vec2 p1, glm::vec2 center, floa
     return false;
 }
 
-std::vector<glm::vec2> generate_poisson_disk_brute(glm::vec2 center, float radius_max, float distance_min, int max_points = 1000)
+std::vector<glm::vec2> generate_poisson_disk_grid(glm::vec2 center, float radius_max, float radius_min, int max_points = 10000)
 {
+    const float cell_size = radius_min / std::sqrt(2.f);
+    const int grid_dim = int(std::ceil(2.f * radius_max / cell_size));
+    std::vector<std::vector<int>> grid(grid_dim * grid_dim, std::vector<int>{});
+
+    auto grid_index = [&](glm::vec2 p) -> glm::ivec2 {
+        glm::vec2 offset = p - (center - glm::vec2(radius_max));
+        return glm::clamp(glm::ivec2(offset / cell_size), glm::ivec2(0), glm::ivec2(grid_dim - 1));
+    };
+
     std::vector<glm::vec2> points;
+    std::vector<int> active;
 
-    int global_attempts = 0;
-    while (points.size() < max_points && global_attempts < max_points * 10) {
-        bool point_added = false;
+    // 1. point initial au centre
+    glm::vec2 first = center;
+    points.push_back(first);
+    active.push_back(0);
+    glm::ivec2 gi = grid_index(first);
+    grid[gi.x + gi.y * grid_dim].push_back(0);
 
-        for (int attempt = 0; attempt < 30; ++attempt) {
+    const int k = 100;
+
+    while (!active.empty() && points.size() < max_points) {
+        int idx = utils::rand(0, int(active.size()));
+        glm::vec2 origin = points[active[idx]];
+        bool found = false;
+
+        for (int i = 0; i < k; ++i) {
             float angle = utils::rand(0.f, 2.f * 3.14159f);
-            float radius = radius_max * std::sqrt(utils::rand(0.f, 1.f));
-            glm::vec2 candidate = center + radius * glm::vec2(std::cos(angle), std::sin(angle));
+            float dist = utils::rand(radius_min, 2.f * radius_min);
+            glm::vec2 offset = dist * glm::vec2(std::cos(angle), std::sin(angle));
+            glm::vec2 candidate = origin + offset;
 
-            float min_distance = utils::rand(distance_min, 2.f * distance_min);
+            if (glm::distance(candidate, center) > radius_max)
+                continue;
 
+            glm::ivec2 cg = grid_index(candidate);
             bool valid = true;
-            for (const auto& p : points) {
-                if (glm::distance(candidate, p) < min_distance) {
-                    valid = false;
-                    break;
+
+            for (int y = -2; y <= 2 && valid; ++y) {
+                for (int x = -2; x <= 2 && valid; ++x) {
+                    glm::ivec2 neighbor = cg + glm::ivec2(x, y);
+                    if (neighbor.x < 0 || neighbor.x >= grid_dim || neighbor.y < 0 || neighbor.y >= grid_dim)
+                        continue;
+
+                    for (int j : grid[neighbor.x + neighbor.y * grid_dim]) {
+                        if (glm::distance(points[j], candidate) < radius_min) {
+                            valid = false;
+                            break;
+                        }
+                    }
                 }
             }
 
             if (valid) {
+                int new_index = int(points.size());
                 points.push_back(candidate);
-                point_added = true;
-                break; // point suivant
+                active.push_back(new_index);
+                grid[cg.x + cg.y * grid_dim].push_back(new_index);
+                found = true;
+                break;
             }
         }
 
-        if (!point_added) {
-            // Si pas de point placé après 30 try on give up 
+        if (!found) {
+            active[idx] = active.back();
+            active.pop_back();
         }
-
-        ++global_attempts;
     }
 
+    std::cout << "Points generes avec poisson : " << points.size() << " / " << max_points << std::endl;
     return points;
 }
+
 
 
 struct Particle {
@@ -163,8 +200,9 @@ int main()
 
     std::vector<Particle> particles;
 
-    auto positions = generate_poisson_disk_brute({0.f, 0.f}, 0.5f, 0.03f);
-
+    //(center, radius_max, distance_min);
+    auto positions = generate_poisson_disk_grid({0.f, 0.f}, 0.5f, 0.01f);
+    
     for (auto& pos : positions) {
         Particle p;
         p.position = pos;
@@ -212,7 +250,7 @@ int main()
 
             float radius = 0.02f * shrink_factor * pulse;
             */
-            float radius = 0.005f; // taille fixe sans shrink
+            float radius = 0.001f; // taille fixe sans shrink
 
             float t = glm::clamp(p.age / p.lifetime, 0.f, 1.f);
             glm::vec4 color = glm::mix(p.color_start, p.color_end, t);
