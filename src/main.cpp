@@ -97,15 +97,10 @@ struct Particle {
         glm::vec2 center = {0.0f, 0.0f};
         float radius_max = 0.3f;
 
-        glm::vec2 p_local;
-        do {
-            p_local = glm::vec2(
-                utils::rand(-radius_max, radius_max),
-                utils::rand(-radius_max, radius_max)
-            );
-        } while (glm::dot(p_local, p_local) > radius_max * radius_max); // loop jusqua ce que ce soit bien dans le cercle
+        float boxAngle = utils::rand(0.f, 2.f * 3.14159f);
+        float radius = radius_max * std::sqrt(utils::rand(0.f, 1.f));
 
-        position = center + p_local;
+        position = center + radius * glm::vec2(std::cos(boxAngle), std::sin(boxAngle));
 
         float angle = utils::rand(0.f, 2.f * 3.14159f);
         float speed = 0; //utils::rand(0.2f, 0.6f);
