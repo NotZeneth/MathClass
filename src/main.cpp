@@ -125,7 +125,7 @@ int main()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
     std::vector<Particle> particles;
-    for (int i = 0; i < 300; ++i) {
+    for (int i = 0; i < 1000; ++i) {
         particles.emplace_back();
     }
 
@@ -170,7 +170,7 @@ int main()
 
             float radius = 0.02f * shrink_factor * pulse;
             */
-            float radius = 0.01f; // taille fixe sans shrink
+            float radius = 0.005f; // taille fixe sans shrink
 
             float t = glm::clamp(p.age / p.lifetime, 0.f, 1.f);
             glm::vec4 color = glm::mix(p.color_start, p.color_end, t);
