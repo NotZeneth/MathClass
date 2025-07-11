@@ -94,13 +94,17 @@ struct Particle {
 
     Particle()
     {
+        
+        glm::vec2 spawn_min = { 0.2f, -0.8f};
+        glm::vec2 spawn_max = { 0.8f,  0.8f};
+
         position = {
-            utils::rand(-gl::window_aspect_ratio(), gl::window_aspect_ratio()),
-            utils::rand(-1.f, 1.f)
+            utils::rand(spawn_min.x, spawn_max.x),
+            utils::rand(spawn_min.y, spawn_max.y)
         };
 
         float angle = utils::rand(0.f, 2.f * 3.14159f);
-        float speed = utils::rand(0.2f, 0.6f);
+        float speed = 0; //utils::rand(0.2f, 0.6f);
         mass = utils::rand(0.5f, 2.f);
 
         velocity = glm::vec2(std::cos(angle), std::sin(angle)) * speed;
