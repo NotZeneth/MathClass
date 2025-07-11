@@ -81,6 +81,45 @@ bool intersect_segment_circle(glm::vec2 p0, glm::vec2 p1, glm::vec2 center, floa
     return false;
 }
 
+std::vector<glm::vec2> generate_poisson_disk_brute(glm::vec2 center, float radius_max, float distance_min, int max_points = 1000)
+{
+    std::vector<glm::vec2> points;
+
+    int global_attempts = 0;
+    while (points.size() < max_points && global_attempts < max_points * 10) {
+        bool point_added = false;
+
+        for (int attempt = 0; attempt < 30; ++attempt) {
+            float angle = utils::rand(0.f, 2.f * 3.14159f);
+            float radius = radius_max * std::sqrt(utils::rand(0.f, 1.f));
+            glm::vec2 candidate = center + radius * glm::vec2(std::cos(angle), std::sin(angle));
+
+            float min_distance = utils::rand(distance_min, 2.f * distance_min);
+
+            bool valid = true;
+            for (const auto& p : points) {
+                if (glm::distance(candidate, p) < min_distance) {
+                    valid = false;
+                    break;
+                }
+            }
+
+            if (valid) {
+                points.push_back(candidate);
+                point_added = true;
+                break; // point suivant
+            }
+        }
+
+        if (!point_added) {
+            // Si pas de point placé après 30 try on give up 
+        }
+
+        ++global_attempts;
+    }
+
+    return points;
+}
 
 
 struct Particle {
@@ -123,8 +162,13 @@ int main()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
     std::vector<Particle> particles;
-    for (int i = 0; i < 1000; ++i) {
-        particles.emplace_back();
+
+    auto positions = generate_poisson_disk_brute({0.f, 0.f}, 0.5f, 0.03f);
+
+    for (auto& pos : positions) {
+        Particle p;
+        p.position = pos;
+        particles.push_back(p);
     }
 
 
