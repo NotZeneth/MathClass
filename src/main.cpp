@@ -200,6 +200,49 @@ void draw_parametric(std::function<glm::vec2(float)> const& parametric, int reso
     }
 }
 
+glm::vec2 bezier1_bernstein(glm::vec2 p0, glm::vec2 p1, float t)
+{
+    return (1 - t) * p0 + t * p1;
+}
+glm::vec2 bezier2_bernstein(glm::vec2 p0, glm::vec2 p1, glm::vec2 p2, float t)
+{
+    float u = 1 - t;
+    return u * u * p0 + 2 * u * t * p1 + t * t * p2;
+}
+glm::vec2 bezier3_bernstein(glm::vec2 p0, glm::vec2 p1, glm::vec2 p2, glm::vec2 p3, float t)
+{
+    float u = 1 - t;
+    return u * u * u * p0
+         + 3 * u * u * t * p1
+         + 3 * u * t * t * p2
+         + t * t * t * p3;
+}
+
+glm::vec2 bezier1_casteljau(glm::vec2 p0, glm::vec2 p1, float t)
+{
+    return (1 - t) * p0 + t * p1;
+}
+glm::vec2 bezier2_casteljau(glm::vec2 p0, glm::vec2 p1, glm::vec2 p2, float t)
+{
+    glm::vec2 a = glm::mix(p0, p1, t);
+    glm::vec2 b = glm::mix(p1, p2, t);
+    return glm::mix(a, b, t);
+}
+glm::vec2 bezier3_casteljau(glm::vec2 p0, glm::vec2 p1, glm::vec2 p2, glm::vec2 p3, float t)
+{
+    glm::vec2 a = glm::mix(p0, p1, t);
+    glm::vec2 b = glm::mix(p1, p2, t);
+    glm::vec2 c = glm::mix(p2, p3, t);
+    glm::vec2 d = glm::mix(a, b, t);
+    glm::vec2 e = glm::mix(b, c, t);
+    return glm::mix(d, e, t);
+}
+
+glm::vec2 screen_to_aspect(glm::vec2 p) {
+    return p * glm::vec2(1.f / gl::framebuffer_aspect_ratio(), 1.f);
+}
+
+
 int main()
 {
     gl::init("Particules!");
@@ -229,6 +272,57 @@ int main()
             float y = 0.13f * std::cos(angle) - 0.05f * std::cos(2 * angle)
                     - 0.02f * std::cos(3 * angle) - 0.01f * std::cos(4 * angle);
             return glm::vec2(x, y);
+        });
+
+        draw_parametric([](float t) {
+            glm::vec2 p0 = {-0.9f, -0.8f};
+            glm::vec2 p1 = {-0.6f, -0.5f};
+            return bezier1_bernstein(p0, p1, t);
+        });
+
+        draw_parametric([](float t) {
+            glm::vec2 p0 = {-0.8f, 0.7f};
+            glm::vec2 p1 = {-0.7f, 0.95f};
+            glm::vec2 p2 = {-0.4f, 0.7f};
+            return bezier2_bernstein(p0, p1, p2, t);
+        });
+
+        draw_parametric([](float t) {
+            glm::vec2 p0 = {-0.2f, 0.6f};
+            glm::vec2 p1 = {-0.1f, 0.9f};
+            glm::vec2 p2 = { 0.1f, 0.9f};
+            glm::vec2 p3 = { 0.2f, 0.6f};
+            return bezier3_bernstein(p0, p1, p2, p3, t);
+        });
+
+        draw_parametric([](float t) {
+            glm::vec2 p0 = {-0.2f, -0.6f};
+            glm::vec2 p1 = { 0.2f, -0.9f};
+            return bezier1_casteljau(p0, p1, t);
+        });
+
+        draw_parametric([](float t) {
+            glm::vec2 p0 = {0.4f, 0.7f};
+            glm::vec2 p1 = {0.7f, 1.0f};
+            glm::vec2 p2 = {0.9f, 0.7f};
+            return bezier2_casteljau(p0, p1, p2, t);
+        });
+
+        draw_parametric([](float t) {
+            glm::vec2 p0 = {0.5f, -0.7f};
+            glm::vec2 p1 = {0.6f, -0.3f};
+            glm::vec2 p2 = {0.8f, -0.3f};
+            glm::vec2 p3 = {0.9f, -0.7f};
+            return bezier3_casteljau(p0, p1, p2, p3, t);
+        });
+
+        // La courbe dynamique qui suit la souris ca
+        draw_parametric([](float t) {
+            glm::vec2 p0 = {-0.2f, -0.1f};
+            glm::vec2 p1 = {-0.1f,  0.4f};
+            glm::vec2 p2 = gl::mouse_position();
+            glm::vec2 p3 = { 0.2f, -0.1f};
+            return bezier3_casteljau(p0, p1, p2, p3, t);
         });
 
         for (auto& p : particles) {
