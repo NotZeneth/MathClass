@@ -238,8 +238,44 @@ glm::vec2 bezier3_casteljau(glm::vec2 p0, glm::vec2 p1, glm::vec2 p2, glm::vec2 
     return glm::mix(d, e, t);
 }
 
-glm::vec2 screen_to_aspect(glm::vec2 p) {
-    return p * glm::vec2(1.f / gl::framebuffer_aspect_ratio(), 1.f);
+float find_nearest_t(std::function<glm::vec2(float)> bezier, glm::vec2 target)
+{
+    // Étape 1 : Approximation initiale
+    float best_t = 0.f;
+    float best_dist2 = std::numeric_limits<float>::max();
+    const int samples = 100;
+
+    for (int i = 0; i <= samples; ++i) {
+        float t_candidate = float(i) / samples;
+        glm::vec2 diff = bezier(t_candidate) - target;
+        float dist2 = glm::dot(diff, diff);
+        if (dist2 < best_dist2) {
+            best_dist2 = dist2;
+            best_t = t_candidate;
+        }
+    }
+
+    // Étape 2 : Descente de gradient
+    float t = best_t;
+    const float step = 0.01f;
+    const float epsilon = 1e-4f;
+    const int max_iter = 100;
+
+    for (int i = 0; i < max_iter; ++i) {
+        float t1 = glm::clamp(t - epsilon, 0.f, 1.f);
+        float t2 = glm::clamp(t + epsilon, 0.f, 1.f);
+
+        glm::vec2 d1 = bezier(t1) - target;
+        glm::vec2 d2 = bezier(t2) - target;
+
+        float f1 = glm::dot(d1, d1);
+        float f2 = glm::dot(d2, d2);
+
+        float grad = (f2 - f1) / (2.f * epsilon);
+        t = glm::clamp(t - step * grad, 0.f, 1.f);
+    }
+
+    return t;
 }
 
 
@@ -291,6 +327,18 @@ int main()
             return bezier3_casteljau(p0, p1, p2, p3, t);
         });
 
+        glm::vec2 mouse = (gl::mouse_position());
+        utils::draw_disk(mouse, 0.015f, {1.f, 1.f, 0.f, 1.f}); 
+        
+
+        auto bezier = [&](float t) {
+            return bezier3_casteljau(p0, p1, p2, p3, t);
+        };
+
+        float nearest_t = find_nearest_t(bezier, mouse);
+        glm::vec2 closest = bezier(nearest_t);
+        utils::draw_disk(closest, 0.02f, {0.f, 1.f, 0.f, 1.f}); // cercle vert au point le + proche
+        utils::draw_line(mouse, closest, 0.002f, {0.f, 1.f, 1.f, 1.f});
 
         for (auto& p : particles) {
             glm::vec2 total_force{};
