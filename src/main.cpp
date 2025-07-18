@@ -306,11 +306,7 @@ int main()
             glm::vec2 acceleration = total_force / p.mass;
             p.velocity += acceleration * dt;
 
-            glm::vec2 old_position = p.position;
-            glm::vec2 new_position = p.position + p.velocity * dt;
-
-            bool collided = false;
-
+            p.position += p.velocity * dt;
             p.age += dt;
         }
 
