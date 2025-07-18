@@ -260,23 +260,22 @@ int main()
     const int NUM_PARTICLES = 100;
 
     for (int i = 0; i < NUM_PARTICLES; ++i) {
-        float t = utils::rand(0.f, 1.f);
+        float t = float(i) / (NUM_PARTICLES - 1);
         glm::vec2 pos = bezier3_casteljau(p0, p1, p2, p3, t);
 
         float delta = 0.001f;
         glm::vec2 before = bezier3_casteljau(p0, p1, p2, p3, glm::clamp(t - delta, 0.f, 1.f));
         glm::vec2 after  = bezier3_casteljau(p0, p1, p2, p3, glm::clamp(t + delta, 0.f, 1.f));
         glm::vec2 tangent = glm::normalize(after - before);
-        glm::vec2 normal = glm::vec2(-tangent.y, tangent.x); // normale à la courbe
+        glm::vec2 normal = glm::vec2(-tangent.y, tangent.x);
 
         Particle p;
         p.position = pos;
-        p.velocity = normal * utils::rand(0.2f, 0.4f);
-        p.mass = utils::rand(0.5f, 2.f);
-        p.lifetime = utils::rand(5.f, 8.f);
+        p.velocity = normal * 0.3f;
+        p.mass = 1.0f;
+        p.lifetime = 10.0f;
         p.color_start = {1.f, 0.f, 0.f, 1.f};
         p.color_end   = {1.f, 0.f, 0.f, 1.f};
-
 
         particles.push_back(p);
     }
@@ -288,7 +287,6 @@ int main()
 
         float dt = gl::delta_time_in_seconds();
 
-                // Courbe Bezier utilisée pour le spawn
         draw_parametric([&](float t) {
             return bezier3_casteljau(p0, p1, p2, p3, t);
         });
