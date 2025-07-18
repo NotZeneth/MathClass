@@ -196,7 +196,7 @@ void draw_parametric(std::function<glm::vec2(float)> const& parametric, int reso
         glm::vec2 p1 = parametric(t1);
         glm::vec2 p2 = parametric(t2);
 
-        utils::draw_line(p1, p2, 0.002f, {1.f, 1.f, 1.f, 1.f});
+        utils::draw_line(p1, p2, 0.008f, {1.f, 1.f, 1.f, 1.f});
     }
 }
 
@@ -252,6 +252,35 @@ int main()
 
     std::vector<Particle> particles;
 
+    glm::vec2 p0 = {-0.8f,  0.0f};
+    glm::vec2 p1 = {-0.4f,  0.6f};
+    glm::vec2 p2 = { 0.4f, -0.6f};
+    glm::vec2 p3 = { 0.8f,  0.0f};
+
+    const int NUM_PARTICLES = 100;
+
+    for (int i = 0; i < NUM_PARTICLES; ++i) {
+        float t = utils::rand(0.f, 1.f);
+        glm::vec2 pos = bezier3_casteljau(p0, p1, p2, p3, t);
+
+        float delta = 0.001f;
+        glm::vec2 before = bezier3_casteljau(p0, p1, p2, p3, glm::clamp(t - delta, 0.f, 1.f));
+        glm::vec2 after  = bezier3_casteljau(p0, p1, p2, p3, glm::clamp(t + delta, 0.f, 1.f));
+        glm::vec2 tangent = glm::normalize(after - before);
+        glm::vec2 normal = glm::vec2(-tangent.y, tangent.x); // normale à la courbe
+
+        Particle p;
+        p.position = pos;
+        p.velocity = normal * utils::rand(0.2f, 0.4f);
+        p.mass = utils::rand(0.5f, 2.f);
+        p.lifetime = utils::rand(5.f, 8.f);
+        p.color_start = {1.f, 0.f, 0.f, 1.f};
+        p.color_end   = {1.f, 0.f, 0.f, 1.f};
+
+
+        particles.push_back(p);
+    }
+
     while (gl::window_is_open())
     {
         glClearColor(0.f, 0.f, 0.f, 1.f);
@@ -259,71 +288,11 @@ int main()
 
         float dt = gl::delta_time_in_seconds();
 
-        // Cercle
-        draw_parametric([](float t) {
-            float angle = t * 2.f * 3.14159f;
-            return glm::vec2(std::cos(angle), std::sin(angle)) * 0.4f;
-        });
-
-        // Coeur
-        draw_parametric([](float t) {
-            float angle = t * 2.f * 3.14159f;
-            float x = 0.16f * std::sin(angle) * std::sin(angle) * std::sin(angle);
-            float y = 0.13f * std::cos(angle) - 0.05f * std::cos(2 * angle)
-                    - 0.02f * std::cos(3 * angle) - 0.01f * std::cos(4 * angle);
-            return glm::vec2(x, y);
-        });
-
-        draw_parametric([](float t) {
-            glm::vec2 p0 = {-0.9f, -0.8f};
-            glm::vec2 p1 = {-0.6f, -0.5f};
-            return bezier1_bernstein(p0, p1, t);
-        });
-
-        draw_parametric([](float t) {
-            glm::vec2 p0 = {-0.8f, 0.7f};
-            glm::vec2 p1 = {-0.7f, 0.95f};
-            glm::vec2 p2 = {-0.4f, 0.7f};
-            return bezier2_bernstein(p0, p1, p2, t);
-        });
-
-        draw_parametric([](float t) {
-            glm::vec2 p0 = {-0.2f, 0.6f};
-            glm::vec2 p1 = {-0.1f, 0.9f};
-            glm::vec2 p2 = { 0.1f, 0.9f};
-            glm::vec2 p3 = { 0.2f, 0.6f};
-            return bezier3_bernstein(p0, p1, p2, p3, t);
-        });
-
-        draw_parametric([](float t) {
-            glm::vec2 p0 = {-0.2f, -0.6f};
-            glm::vec2 p1 = { 0.2f, -0.9f};
-            return bezier1_casteljau(p0, p1, t);
-        });
-
-        draw_parametric([](float t) {
-            glm::vec2 p0 = {0.4f, 0.7f};
-            glm::vec2 p1 = {0.7f, 1.0f};
-            glm::vec2 p2 = {0.9f, 0.7f};
-            return bezier2_casteljau(p0, p1, p2, t);
-        });
-
-        draw_parametric([](float t) {
-            glm::vec2 p0 = {0.5f, -0.7f};
-            glm::vec2 p1 = {0.6f, -0.3f};
-            glm::vec2 p2 = {0.8f, -0.3f};
-            glm::vec2 p3 = {0.9f, -0.7f};
+                // Courbe Bezier utilisée pour le spawn
+        draw_parametric([&](float t) {
             return bezier3_casteljau(p0, p1, p2, p3, t);
         });
 
-        // La courbe dynamique qui suit la souris ca
-        draw_parametric([](float t) {
-            glm::vec2 p0 = {-0.2f, -0.1f};
-            glm::vec2 p1 = {-0.1f,  0.4f};
-            glm::vec2 p2 = gl::mouse_position();
-            glm::vec2 p3 = { 0.2f, -0.1f};
-            return bezier3_casteljau(p0, p1, p2, p3, t);
-        });
 
         for (auto& p : particles) {
             glm::vec2 total_force{};
@@ -358,7 +327,7 @@ int main()
 
             float radius = 0.02f * shrink_factor * pulse;
             */
-            float radius = 0.001f; // taille fixe sans shrink
+            float radius = 0.01f; // taille fixe sans shrink
 
             float t = glm::clamp(p.age / p.lifetime, 0.f, 1.f);
             glm::vec4 color = glm::mix(p.color_start, p.color_end, t);
