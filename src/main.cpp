@@ -342,8 +342,33 @@ int main()
 
         for (auto& p : particles) {
             glm::vec2 total_force{};
+            total_force += glm::vec2(0.f, -1.0f * p.mass);  // gravité vers le bas
 
             glm::vec2 gravity = glm::vec2(0.f, -1.00f * p.mass);
+
+            auto bezier = [&](float t) {
+                return bezier3_casteljau(p0, p1, p2, p3, t);
+            };
+
+            float t_near = find_nearest_t(bezier, p.position);
+            glm::vec2 nearest_point = bezier(t_near);
+
+            float delta = 0.001f;
+            glm::vec2 before = bezier(glm::clamp(t_near - delta, 0.f, 1.f));
+            glm::vec2 after  = bezier(glm::clamp(t_near + delta, 0.f, 1.f));
+            glm::vec2 tangent = glm::normalize(after - before);
+            glm::vec2 normal = glm::vec2(-tangent.y, tangent.x);
+
+            glm::vec2 dir = p.position - nearest_point;
+            float dist = glm::length(dir);
+
+            if (dist < 0.2f && dist > 0.0001f) {
+                glm::vec2 dir_norm = glm::normalize(dir);
+                float strength = (1.f - dist / 0.2f);  // décroissant
+                glm::vec2 force = dir_norm * strength * 5.f;  // **repousse**
+                total_force += force;
+            }
+
 
             /*
             float k = 1.0f;
