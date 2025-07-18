@@ -51,7 +51,6 @@ bool intersect_segment_circle(glm::vec2 p0, glm::vec2 p1, glm::vec2 center, floa
     glm::vec2 o = p0; // point de départ
     glm::vec2 c = center;
 
-    // On résout||o + d·t - c||² = r²
     glm::vec2 oc = o - c;
 
     float a = glm::dot(d, d);
@@ -157,8 +156,6 @@ std::vector<glm::vec2> generate_poisson_disk_grid(glm::vec2 center, float radius
     return points;
 }
 
-
-
 struct Particle {
     glm::vec2 position;
     glm::vec2 velocity;
@@ -191,6 +188,18 @@ struct Particle {
     }
 };
 
+void draw_parametric(std::function<glm::vec2(float)> const& parametric, int resolution = 100)
+{
+    for (int i = 0; i < resolution - 1; ++i) {
+        float t1 = float(i) / (resolution - 1);
+        float t2 = float(i + 1) / (resolution - 1);
+        glm::vec2 p1 = parametric(t1);
+        glm::vec2 p2 = parametric(t2);
+
+        utils::draw_line(p1, p2, 0.002f, {1.f, 1.f, 1.f, 1.f});
+    }
+}
+
 int main()
 {
     gl::init("Particules!");
@@ -200,22 +209,27 @@ int main()
 
     std::vector<Particle> particles;
 
-    //(center, radius_max, distance_min);
-    auto positions = generate_poisson_disk_grid({0.f, 0.f}, 0.5f, 0.01f);
-    
-    for (auto& pos : positions) {
-        Particle p;
-        p.position = pos;
-        particles.push_back(p);
-    }
-
-
     while (gl::window_is_open())
     {
         glClearColor(0.f, 0.f, 0.f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         float dt = gl::delta_time_in_seconds();
+
+        // Cercle
+        draw_parametric([](float t) {
+            float angle = t * 2.f * 3.14159f;
+            return glm::vec2(std::cos(angle), std::sin(angle)) * 0.4f;
+        });
+
+        // Coeur
+        draw_parametric([](float t) {
+            float angle = t * 2.f * 3.14159f;
+            float x = 0.16f * std::sin(angle) * std::sin(angle) * std::sin(angle);
+            float y = 0.13f * std::cos(angle) - 0.05f * std::cos(2 * angle)
+                    - 0.02f * std::cos(3 * angle) - 0.01f * std::cos(4 * angle);
+            return glm::vec2(x, y);
+        });
 
         for (auto& p : particles) {
             glm::vec2 total_force{};
