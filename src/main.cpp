@@ -240,7 +240,6 @@ glm::vec2 bezier3_casteljau(glm::vec2 p0, glm::vec2 p1, glm::vec2 p2, glm::vec2 
 
 float find_nearest_t(std::function<glm::vec2(float)> bezier, glm::vec2 target)
 {
-    // Étape 1 : Approximation initiale
     float best_t = 0.f;
     float best_dist2 = std::numeric_limits<float>::max();
     const int samples = 100;
@@ -255,7 +254,6 @@ float find_nearest_t(std::function<glm::vec2(float)> bezier, glm::vec2 target)
         }
     }
 
-    // Étape 2 : Descente de gradient
     float t = best_t;
     const float step = 0.01f;
     const float epsilon = 1e-4f;
@@ -273,6 +271,57 @@ float find_nearest_t(std::function<glm::vec2(float)> bezier, glm::vec2 target)
 
         float grad = (f2 - f1) / (2.f * epsilon);
         t = glm::clamp(t - step * grad, 0.f, 1.f);
+    }
+
+    return t;
+}
+
+float find_nearest_t_newton_safe(std::function<glm::vec2(float)> bezier, glm::vec2 target)
+{
+    const int steps = 50;
+    float best_t = 0.f;
+    float best_dist2 = std::numeric_limits<float>::max();
+
+    for (int i = 0; i <= steps; ++i) {
+        float t = float(i) / steps;
+        glm::vec2 diff = bezier(t) - target;
+        float dist2 = glm::dot(diff, diff);
+        if (dist2 < best_dist2) {
+            best_dist2 = dist2;
+            best_t = t;
+        }
+    }
+
+    float t = best_t;
+    const int max_iter = 20;
+    const float epsilon = 1e-5f;
+    const float h = 1e-3f;
+
+    for (int i = 0; i < max_iter; ++i) {
+        glm::vec2 p = bezier(t);
+        glm::vec2 diff = p - target;
+
+        float t_forward = glm::clamp(t + h, 0.f, 1.f);
+        float t_backward = glm::clamp(t - h, 0.f, 1.f);
+
+        glm::vec2 p_plus = bezier(t_forward);
+        glm::vec2 p_minus = bezier(t_backward);
+
+        glm::vec2 d1 = (p_plus - p_minus) / (2.f * h);
+        glm::vec2 d2 = (p_plus - 2.f * p + p_minus) / (h * h);
+
+        float f_prime = 2.f * glm::dot(diff, d1);
+        float f_double_prime = 2.f * (glm::dot(d1, d1) + glm::dot(diff, d2));
+
+        if (std::abs(f_double_prime) < epsilon)
+            break;
+
+        float delta = f_prime / f_double_prime;
+        t -= delta;
+        t = glm::clamp(t, 0.f, 1.f);
+
+        if (std::abs(delta) < epsilon)
+            break;
     }
 
     return t;
@@ -335,7 +384,9 @@ int main()
             return bezier3_casteljau(p0, p1, p2, p3, t);
         };
 
-        float nearest_t = find_nearest_t(bezier, mouse);
+        //float nearest_t = find_nearest_t(bezier, mouse);
+        float nearest_t = find_nearest_t_newton_safe(bezier, mouse);
+
         glm::vec2 closest = bezier(nearest_t);
         utils::draw_disk(closest, 0.02f, {0.f, 1.f, 0.f, 1.f}); // cercle vert au point le + proche
         utils::draw_line(mouse, closest, 0.002f, {0.f, 1.f, 1.f, 1.f});
